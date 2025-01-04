@@ -1,20 +1,45 @@
 package info.eati.service;
 
+import info.eati.entity.Emprestimo;
+import info.eati.entity.Parcela;
+import info.eati.repository.EmprestimoRepository;
+import info.eati.repository.ParcelaRepository;
 import info.eati.request.SimulacaoEmprestimoRequest;
 import info.eati.response.ParcelaSimuladaResponse;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @QuarkusTest
 public class SimuladorEmprestimosServiceTest {
     @Inject
     SimuladorEmprestimosService simuladorEmprestimosService;
+
+    @InjectMocks
+    SimuladorEmprestimosService simuladorEmprestimosServiceMock;
+
+    @Mock
+    EmprestimoRepository emprestimoRepository;
+
+    @Mock
+    ParcelaRepository parcelaRepository;
+
+    @BeforeEach
+    public void setup() {
+        MockitoAnnotations.openMocks(this);
+    }
 
     @Test
     void simular_emprestimo30Mil24Meses2PorCentoJuros_deveGerar24Parcelas() {
@@ -23,6 +48,19 @@ public class SimuladorEmprestimosServiceTest {
         var parcelas = simuladorEmprestimosService.simular(request);
 
         assertEquals(24, parcelas.size());
+    }
+
+    @Test
+    void simular_emprestimo30Mil24Meses2PorCentoJuros_deveGerar24ParcelasEPersistirNoBancoDeDados() {
+
+        var request = new SimulacaoEmprestimoRequest(BigDecimal.valueOf(30000), BigDecimal.valueOf(2), 24);
+
+        var parcelas = simuladorEmprestimosServiceMock.simular(request);
+
+        assertEquals(24, parcelas.size());
+
+        verify(emprestimoRepository, times(1)).persist((Emprestimo) any());
+        verify(parcelaRepository, times(24)).persist((Parcela) any());
     }
 
     @Test
